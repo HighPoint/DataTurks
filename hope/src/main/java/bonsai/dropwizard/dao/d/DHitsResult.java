@@ -6,6 +6,9 @@ import java.util.Date;
 
 @Entity
 @Table(name = "d_hits_result")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DHitsResult.findAll",
                 query = "select e from DHitsResult e"),

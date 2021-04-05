@@ -9,13 +9,14 @@ public class DConstants {
 
     public final static String HIT_STATUS_DONE = "done";
     public final static String HIT_STATUS_NOT_DONE = "notDone";
+    public final static String HIT_STATUS_NO = "noStatus";
     public final static String HIT_STATUS_SKIPPED = "skipped";
     public final static String HIT_STATUS_DELETED = "deleted";
     public final static String HIT_STATUS_PRE_TAGGED = "preTagged";
     public final static String HIT_STATUS_REQUEUED = "reQueued";
     public final static String HIT_STATUS_ALL = null; //no filter
 
-    public final static int MAX_HITS_TO_RETURN = 10;
+    public final static int MAX_HITS_TO_RETURN = 34000;
 
     public final static String NON_LOGGED_IN_USER_ID = "123";
 

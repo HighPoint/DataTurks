@@ -37,10 +37,9 @@ CREATE TABLE `d_hits` (
   `created_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `isURL` tinyint(4) DEFAULT '0',
+  `fileName` VARCHAR(255) NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3561574 DEFAULT CHARSET=latin1;
-
-
 
 CREATE TABLE `d_hits_result` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,

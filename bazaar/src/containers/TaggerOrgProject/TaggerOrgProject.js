@@ -21,13 +21,15 @@ import {
   Menu,
   Dropdown,
   Breadcrumb,
-  Label
+  Label,
+  Input
 } from "semantic-ui-react";
 import {
   fetchProjectStats,
   sendInvite,
   getUidToken,
   fetchHitsDetails,
+  fetHitDetailWithOrder,
   deleteProjectDt,
   logEvent
 } from "../../helpers/dthelper";
@@ -126,9 +128,12 @@ export default class TaggerOrgProject extends Component {
     this.showSummaries = this.showSummaries.bind(this);
     this.inviteSent = this.inviteSent.bind(this);
     this.openScreen = this.openScreen.bind(this);
+    this.openHit = this.openHit.bind(this);
+    this.searchHits = this.searchHits.bind(this);
     this.openModal = this.openModal.bind(this);
     this.closeModal = this.closeModal.bind(this);
     this.hitsFetched = this.hitsFetched.bind(this);
+    this.setHitsNameInDropDown = this.setHitsNameInDropDown.bind(this);
     this.projectDeleted = this.projectDeleted.bind(this);
     this.showTags = this.showTags.bind(this);
     this.deleteProject = this.deleteProject.bind(this);
@@ -143,6 +148,8 @@ export default class TaggerOrgProject extends Component {
       inviteModal: false,
       loading: false,
       successModal: false,
+      hits_name : [],
+      searchedHitsName : [],
       selectedLabel: undefined
     };
   }
@@ -200,6 +207,13 @@ export default class TaggerOrgProject extends Component {
         20,
         this.hitsFetched,
         "done"
+      );    
+      
+      fetHitDetailWithOrder(
+        this.props.currentProject,
+        0,
+        500,
+        this.setHitsNameInDropDown
       );
     }
     // if (this.props.currentProject) {
@@ -247,7 +261,7 @@ export default class TaggerOrgProject extends Component {
           "done"
         );
       }
-    }
+    }        
   }
 
   componentWillUnmount() {
@@ -315,6 +329,16 @@ export default class TaggerOrgProject extends Component {
         hitsDetails: response.body.hits
       });
     }
+  }
+
+  setHitsNameInDropDown(error, response) {    
+    console.log("hitsFetched ", error, response);
+    if (!error) {     
+      this.setState({        
+        hits_name : response.body.hits,
+        searchedHitsName : response.body.hits
+      });
+    }    
   }
 
   loadImages(currentHits) {
@@ -386,6 +410,40 @@ export default class TaggerOrgProject extends Component {
     }
   };
 
+  openHit(hitId){
+    var pushStageJSON = {
+      pathname:
+        "/projects/" +
+        this.props.params.orgName +
+        "/" +
+        this.props.params.projectName +
+        "/space" 
+    };
+    if(hitId){
+      pushStageJSON["query"] = {hitId};        
+    }
+    this.props.pushState(pushStageJSON);
+  };
+
+  searchHits(e){    
+    let  val = e.target.value.trim();
+    let tempSearchedHitsName = [];        
+    if(this.state.hits_name && val != ""){            
+      val = val.toLowerCase();
+      this.state.hits_name.map(function(name, index){
+        if( (name.fileName != null && name.fileName.toLowerCase().indexOf(val) > -1) || (name.fileName == null && ("Document "+(index + 1)).toLowerCase().indexOf(val) > -1)){          
+          name["index"] = index;
+          tempSearchedHitsName.push(name);
+        }
+      })
+    }else{
+      tempSearchedHitsName = this.state.hits_name;
+    }    
+    this.setState({              
+      searchedHitsName : tempSearchedHitsName
+    });
+  };
+
   projectDetailsFetched(error, response) {
     console.log(" project details fetched ", error, response);
     if (!error) {
@@ -411,7 +469,7 @@ export default class TaggerOrgProject extends Component {
     event.preventDefault();
   }
 
-  loadProjectDetails(pid) {
+  loadProjectDetails(pid) {    
     this.setState({
       loading: true,
       projectDetails: undefined,
@@ -421,6 +479,15 @@ export default class TaggerOrgProject extends Component {
       fetchProjectStats(pid, this.projectDetailsFetched);
     } else {
       fetchProjectStats(this.props.currentProject, this.projectDetailsFetched);
+    }
+
+    if(pid){
+      fetHitDetailWithOrder(
+        pid,
+        0,
+        500,
+        this.setHitsNameInDropDown
+      );
     }
   }
 
@@ -1001,7 +1068,7 @@ export default class TaggerOrgProject extends Component {
       }
     }
     return (
-      <div>
+      <div id="testdhaval">
         {classificationResult &&
           this.showClassificationTags(classificationResult)}
         <h3> Entities </h3>
@@ -1562,6 +1629,10 @@ export default class TaggerOrgProject extends Component {
       type: "application/ld+json",
       innerHTML: scriptInnerHTML
     };
+
+    let hitsName = this.state.searchedHitsName ?  this.state.searchedHitsName  : [];
+    let _this = this;
+
     return (
       <div className="taggerPages" style={{ display: 'flex', flexDirection: 'column' }}>
         <Helmet script={[schema]} title={pageTitle}>
@@ -1922,6 +1993,36 @@ export default class TaggerOrgProject extends Component {
             >
               <Icon name="bar graph" /> Insights
             </Button>
+
+            <Dropdown
+                  text="List"
+                  icon="options"
+                  labeled
+                  button
+                  className="icon mini teal list-of-files"
+                  style={{ backgroundColor : "#2185d0",color : "#fff" }}
+                >
+                  <Dropdown.Menu>                      
+                        <Input icon='search' iconPosition='left' className='search' onKeyUp={this.searchHits} onClick={e => e.stopPropagation()} />  
+                        <Dropdown.Menu scrolling>
+                          {                        
+                            hitsName.map(function(name, index){
+                              return <Dropdown.Item 
+                                        onClick={event => {                                                                            
+                                          _this.openHit(name.id);
+                                          event.preventDefault();
+                                        }}
+                                      >
+                                    { (name.fileName ? name.fileName :  "Document ")}
+                                    { (name.fileName ? "" :  (name.index ? name.index :  index) + 1)}                                   
+                                  </Dropdown.Item>
+                            })
+                          }
+                        </Dropdown.Menu>
+                  </Dropdown.Menu>
+            </Dropdown> 
+
+
             <a data-for="main" data-tip={disabledError}>
               <Button
                 as="a"

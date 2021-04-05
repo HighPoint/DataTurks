@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,7 +25,7 @@ public class InternalLoginAuth {
     private  static char[] possibleCharacters = (new String("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")).toCharArray();
 
     private static InternalLoginAuth instance = new InternalLoginAuth();
-    private Map<String, String> tokenCache = new ConcurrentHashMap<>();
+    private Map<String, List<String>> tokenCache = new ConcurrentHashMap<>();
 
     private InternalLoginAuth() {
     }
@@ -54,12 +56,19 @@ public class InternalLoginAuth {
     }
 
     public static void addToken(String userId, String token) {
-        getInstance().tokenCache.put(userId, token);
+    	List<String> tokenList = null; 
+    	if(getInstance().tokenCache.containsKey(userId)) {
+    		tokenList = getInstance().tokenCache.get(userId);
+    	}else {
+    		tokenList = new ArrayList<String>();
+    	}
+    	tokenList.add(token);
+        getInstance().tokenCache.put(userId, tokenList);
     }
 
     private static boolean isDataturksUserValid(String userId, String token) {
         if (getInstance().tokenCache.containsKey(userId)) {
-            return getInstance().tokenCache.get(userId).contentEquals(token);
+            return getInstance().tokenCache.get(userId).indexOf(token) > -1 ;
         }
         return false;
     }

@@ -9,6 +9,9 @@ import java.util.Date;
 
 @Entity
 @Table(name = "d_hits")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DHits.findAll",
                 query = "select e from DHits e"),
@@ -45,6 +48,8 @@ public class DHits implements IDdbPojo{
     private String notes;
     private java.util.Date created_timestamp;
     private java.util.Date updated_timestamp;
+    
+    private String fileName;
 
     public DHits() {
 
@@ -166,5 +171,14 @@ public class DHits implements IDdbPojo{
 
     public void setUpdated_timestamp(Date updated_timestamp) {
         this.updated_timestamp = updated_timestamp;
+    }
+    
+    
+    public String getFileName() {
+    	return this.fileName;
+    }
+    
+    public void setFileName(String fileName) {
+    	this.fileName = fileName;
     }
 }

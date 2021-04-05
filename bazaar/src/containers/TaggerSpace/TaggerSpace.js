@@ -173,11 +173,16 @@ export default class TaggerSpace extends Component {
     ) {
       contributorId = props.location.query.contributorId;
     }
+    let hitId = 0;    
+    if(props.location.query.hitId != undefined){
+      hitId =  props.location.query.hitId ;
+    }    
     this.showTagLine = this.showTagLine.bind(this);
     this.tagAreaClick = this.tagAreaClick.bind(this);
     this.setTagClick = this.setTagClick.bind(this);
     this.saveTagAndNextRow = this.saveTagAndNextRow.bind(this);
     this.skipRow = this.skipRow.bind(this);
+    this.saveDraft = this.saveDraft.bind(this);
     this.projectDetailsFetched = this.projectDetailsFetched.bind(this);
     this.hitAddCallback = this.hitAddCallback.bind(this);
     this.addHitinState = this.addHitinState.bind(this);
@@ -292,6 +297,7 @@ export default class TaggerSpace extends Component {
         type,
         contributorId,
         label,
+        hitId,
         tagLine,
         clickedColor,
         evaluationType,
@@ -334,6 +340,7 @@ export default class TaggerSpace extends Component {
         type,
         contributorId,
         label,
+        hitId,
         selectIds: [],
         evaluationType,
         rules,
@@ -388,6 +395,7 @@ export default class TaggerSpace extends Component {
         type,
         contributorId,
         label,
+        hitId,
         selectIds: [],
         entities,
         evaluationType,
@@ -471,6 +479,11 @@ export default class TaggerSpace extends Component {
       ) {
         ch.data = ch.data + "?ts=" + new Date();
       }
+
+      let autoLabel = true;
+      if(this.props.projectDetails.task_type === DOCUMENT_ANNOTATION ){
+          autoLabel  = false;
+      }      
       this.state = {
         type,
         defaultShape,
@@ -479,12 +492,13 @@ export default class TaggerSpace extends Component {
         contributorId,
         evaluationType,
         label,
+        hitId,
         selectIds: [],
         entities,
         entityColorMap,
         boundingBoxMap,
         shortcuts,
-        autoLabel: true,
+        autoLabel,
         autoClose,
         notes,
         rules,
@@ -507,13 +521,14 @@ export default class TaggerSpace extends Component {
         entities: [],
         words: [],
         hits: [],
+        hitId,
         type,
         searchQuery: '',
         evaluationType,
         label,
         contributorId,
         rules: {},
-        autoLabel: true,
+        autoLabel: false,
         autoClose: true,
         defaultShape: "polygon",
         notes: false,
@@ -1546,8 +1561,23 @@ export default class TaggerSpace extends Component {
       let currentHits = this.state.hits;
       let currentIndex = this.state.currentIndex;
       currentIndex = currentIndex + 1;
-      currentHits = [...currentHits, ...response.body.hits];
-      const currentHit = currentHits[currentIndex];
+      currentHits = [...currentHits, ...response.body.hits];            
+
+      let tempCurrentHit;
+      // alert("this.hitId : "+this.state.hitId);
+      if(this.state.hitId > 0){
+        tempCurrentHit = response.body.singleHit;
+        /*for (let index = 0; index < currentHits.length; index++) {
+           if(currentHits[index].id == this.state.hitId){
+              tempCurrentHit = currentHits[index];
+              // alert("macthed");
+           }
+        }*/
+      }else{
+        tempCurrentHit = currentHits[currentIndex];
+      }      
+      const currentHit = tempCurrentHit;      
+      // alert("currentHit 1: "+currentHit.data); 
       if (response.body.hits.length === 0 || !currentHit) {
         this.setState({
           hits: currentHits,
@@ -1739,7 +1769,7 @@ export default class TaggerSpace extends Component {
             projectDetails.task_type === DOCUMENT_ANNOTATION ||
             projectDetails.task_type === POS_TAGGING_GENERIC
           ) {
-            let autoClose = true;
+            let autoClose = false;
             let classification = undefined;
             let classificationResponse = [];
             if ("autoClose" in rules) {
@@ -1831,7 +1861,8 @@ export default class TaggerSpace extends Component {
       this.state.type,
       this.state.label,
       this.state.contributorId,
-      this.state.evaluationType
+      this.state.evaluationType,
+      this.state.hitId
     );
   }
 
@@ -2097,6 +2128,63 @@ export default class TaggerSpace extends Component {
       this.hitAddCallback
     );
     return false;
+  }
+
+  saveDraftCallBack(err, response){
+    console.log('saveDraftCallBack', err, response);
+    if (!err) {
+      this.setState({ loading: false });
+      if (this.state.newEntities && this.state.newEntities.length > 0) {
+        logEvent("buttons", "New Entities");
+        console.log("edit", this.state.newEntities);
+        const { taskRules } = this.props.projectDetails;
+        const rulesJson = JSON.parse(taskRules);
+        rulesJson.tags = [...this.state.entities, ...this.state.newEntities].join(
+          ","
+        );
+        editProject(
+          this.props.currentProject,
+          { rules: JSON.stringify(rulesJson) },
+          this.projectEditedCallback.bind(this)
+        );
+        this.setState({ loading: true, newEntities: [] });
+      }
+      this.props.getProjectDetails(this.props.currentProject, getUidToken());
+      this.hitAddCallback(undefined, "Hit moved to done", this.state.action ? this.state.action : 'moveToDone');
+    } else {
+      this.setState({ loading: false });
+      if (response && response.body && response.body.code && response.body.code === 401) {
+        refreshUidToken(() => { console.log('token refreshed'); this.setState({ loading: false })});
+      } else {
+        captureException(err);
+      }
+    }
+    window.location.reload();
+  }
+
+  saveDraft(event,data){
+    logEvent("buttons", 'Done');
+    logEvent("Mark As", 'Done');
+    const { currentHit, changesInSession } = this.state;
+    console.log('saveElement', currentHit.id);
+    let result = '';
+    if (changesInSession > 0) {
+      result = this.getCurrentResult();
+    } else if (currentHit.hitResults && currentHit.hitResults.length > 0) {
+      result = currentHit.hitResults[0].result;
+    }
+    this.state.currentHit.result = result;
+    this.state.currentHit.status = 'done';
+    if (this.state.classification && this.state.classification.length > 0) {
+      if (Object.keys(this.state.classificationResponse).length === 0) {
+        alert("Please choose atleast one classification");
+        return false;
+      }
+    }
+    this.state.action ='moveToDone';
+    this.state.changesInSession = 0;    
+    this.setState({ loading: true, action: 'moveToDone' });
+    updateHitStatus(currentHit.id, this.props.currentProject, HIT_STATE_NOT_DONE, result, this.saveDraftCallBack.bind(this));
   }
 
   projectEditedCallback(response, error) {
@@ -2646,6 +2734,7 @@ export default class TaggerSpace extends Component {
           saveTagAndNextRow={this.saveTagAndNextRow}
           saveRow={this.moveToDone}
           skipRow={this.skipRow}
+          saveDraft={this.saveDraft}
           urlData={this.state.currentHit.isURL}
           getBackTopreviousRow={this.getBackTopreviousRow}
           autoClose={this.state.autoClose}

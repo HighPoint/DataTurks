@@ -198,6 +198,78 @@ public class Controlcenter {
         }
         return null;
     }
+    
+  //> make sure the user has permission to upload file
+    // Call the right handler based on the task type
+    public static UploadResponse handleFileUpload(DReqObj reqObj, String projectId, String filePath,String fileName) {
+        if (reqObj != null && projectId != null && filePath != null) {
+            if (DUtils.isOnPremMode() && !DUtils.isLicenseActive()) {
+                throw new WebApplicationException("Your license for Dataturks has expired, please contact us at support@dataturks.com", Response.Status.METHOD_NOT_ALLOWED);
+
+            }
+
+            //make sure the user has permission to upload data to this project.
+            DTypes.Project_User_Role role = getProjectUserRole(projectId, reqObj.getUid());
+            if (role != null && role == DTypes.Project_User_Role.OWNER) {
+                DProjects project = AppConfig.getInstance().getdProjectsDAO().findByIdInternal(projectId);
+
+                if (project != null && project.getTaskType() != null) {
+                    UploadResponse response = null;
+                    //based on task type call the right handler.
+                    switch (project.getTaskType()) {
+                        case POS_TAGGING:
+                            response = DataUploadHandler.handlePOSTagging(reqObj,  project, filePath);
+                            break;
+                        case POS_TAGGING_GENERIC:
+                            response = DataUploadHandler.handlePOSTaggingGeneric(reqObj,  project, filePath);
+                            break;
+                        case TEXT_CLASSIFICATION:
+                            response = DataUploadHandler.handleTextClassification(reqObj,  project, filePath);
+                            break;
+                        case TEXT_SUMMARIZATION:
+                            response = DataUploadHandler.handleTextSummarization(reqObj,  project, filePath);
+                            break;
+                        case TEXT_MODERATION:
+                            response = DataUploadHandler.handleTextModeration(reqObj,  project, filePath);
+                            break;
+                        case DOCUMENT_ANNOTATION:
+                            response = DataUploadHandler.handleDocumentAnnotation(reqObj,  project, filePath,fileName);
+                            break;
+                        case IMAGE_CLASSIFICATION:
+                            response = DataUploadHandler.handleImageClassification(reqObj,  project, filePath);
+                            break;
+                        case IMAGE_BOUNDING_BOX:
+                            response = DataUploadHandler.handleImageBoundingBox(reqObj,  project, filePath);
+                            break;
+                        case IMAGE_POLYGON_BOUNDING_BOX:
+                        case IMAGE_POLYGON_BOUNDING_BOX_V2:
+                            response = DataUploadHandler.handleImagePolygonBoundingBox(reqObj,  project, filePath);
+                            break;
+                        case VIDEO_BOUNDING_BOX:
+                        case VIDEO_CLASSIFICATION:
+                            response = DataUploadHandler.handleVideoTasks(reqObj,  project, filePath);
+                            break;
+                        default:
+                            throw new WebApplicationException("Unkown task type" , Response.Status.BAD_REQUEST);
+                    }
+                    //if not set by the individual project type.
+                    if (response.getTotalUploadSizeInBytes() == 0) {
+                        response.setTotalUploadSizeInBytes(UploadFileUtil.getFileSize(filePath));
+                    }
+                    return response;
+
+                }
+                else {
+                    throw new WebApplicationException("No such project found", Response.Status.BAD_REQUEST);
+                }
+            }
+            else {
+                throw new NotAuthorizedException("Failed: You must be a project owner to perform this action.", Response.Status.UNAUTHORIZED);
+            }
+
+        }
+        return null;
+    }
 
     //copy the data in a local file and return file path
     public static String handleDataDownload(DReqObj reqObj, String projectId, DTypes.File_Download_Type downloadType, DTypes.File_Download_Format format) {
@@ -263,7 +335,7 @@ public class Controlcenter {
     // for public and restricted projects we can return the hits.
     public static GetHits getHits(DReqObj reqObj, String projectId, String status,
                                   String userId, String label, String evaluation,
-                                  long count, long start, DTypes.HIT_ORDER_Type orderBy) {
+                                  long count, long start, DTypes.HIT_ORDER_Type orderBy,Long hitID) {
         if (projectId != null) {
             DProjects project = AppConfig.getInstance().getdProjectsDAO().findByIdInternal(projectId);
             if (project != null) {
@@ -273,6 +345,16 @@ public class Controlcenter {
 
                 GetHits getHits = new GetHits();
                 getHits.addRelevantProjectDetails(project);
+                
+                if(hitID > 0) {          
+                	LOG.info("hitid from Request = " + hitID);
+                	DHits dHits = AppConfig.getInstance().getdHitsDAO().findByIdInternal(hitID);
+                	LOG.info("hitid from Request1 = " + dHits);
+                	List<DHitsResult> results = AppConfig.getInstance().getdHitsResultDAO().findByHitIdInternal(dHits.getId());
+                	getHits.addHitDetail(dHits,results);
+                }
+                
+                
                 List<DHits> dHits = new ArrayList<>();
 
                 // if status = not_done, randmonly select from db so that we do not assign same hit to multiple ppl.
@@ -286,6 +368,8 @@ public class Controlcenter {
                     if (dHits.size() < count) {
                         dHits.addAll(AppConfig.getInstance().getdHitsDAO().getInternal(projectId, start, count - dHits.size(), DConstants.HIT_STATUS_REQUEUED, orderBy));
                     }
+                }else if (status != null && status.equalsIgnoreCase(DConstants.HIT_STATUS_NO) ) {
+                	dHits.addAll(AppConfig.getInstance().getdHitsDAO().getInternal(projectId, 0, 5000, DConstants.HIT_STATUS_ALL, orderBy));
                 }
                 else if (label != null || userId != null) { //we need to do some filtering based on label/userId
                     return getHitsFiltered(reqObj, getHits, projectId, status, userId, label, count, start);
@@ -463,7 +547,7 @@ public class Controlcenter {
             }
 
 
-            if (DConstants.HIT_STATUS_DONE.equalsIgnoreCase(hitStatus))
+            if (DConstants.HIT_STATUS_DONE.equalsIgnoreCase(hitStatus) || DConstants.HIT_STATUS_NOT_DONE.equalsIgnoreCase(hitStatus))
             {
                 // update or create.
                 DHitsResultDAO dao = AppConfig.getInstance().getdHitsResultDAO();
@@ -493,7 +577,11 @@ public class Controlcenter {
                     LOG.error(e.toString() + " time taken value = " + reqObj.getReqMap().get("timeTakenToLabelInSec"));
                 }
                 AppConfig.getInstance().getdHitsResultDAO().saveOrUpdateInternal(result);
-                hitStatus = DConstants.HIT_STATUS_DONE;
+                if(DConstants.HIT_STATUS_DONE.equalsIgnoreCase(hitStatus) ) {
+                	hitStatus = DConstants.HIT_STATUS_DONE;
+                }else {
+                	hitStatus = DConstants.HIT_STATUS_NOT_DONE;
+                }
             }
 
             //update the hit status.
@@ -720,7 +808,7 @@ public class Controlcenter {
             }
 
             //only an admin can add others.
-            if (!isProjectAdmin(projectId, reqObj.getUid())) {
+            if (!isProjectAdmin(projectId, reqObj.getUid())	) {
                 throw new NotAuthorizedException("Failed: You don't have permission to perform this action. Only a admin can add a contributor.", Response.Status.UNAUTHORIZED);
             }
 

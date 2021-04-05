@@ -18,7 +18,9 @@ export default class DocumentAnnotator extends Component {
     console.log('DocumentAnnotator props', props);
     this.handleSelection = this.handleSelection.bind(this);
     this.handleMarkerClick = this.handleMarkerClick.bind(this);
-    this.saveCategory = this.saveCategory.bind(this);
+    this.saveCategory = this.saveCategory.bind(this);     
+    this.onMouseUp = this.onMouseUp.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
     // this.closeModal = this.closeModal.bind(this);
     let documentText = this.props.documentText;
     if (this.props.urlData) {
@@ -33,7 +35,9 @@ export default class DocumentAnnotator extends Component {
       undoAnnotations: [],
       autoLabel: props.autoLabel,
       postitionAnnotationMap: {},
-      firstTime: false
+      firstTime: false,
+      dragging : false,
+      rel : { top : 0 , left : 0 }
     };
   }
 
@@ -227,7 +231,7 @@ export default class DocumentAnnotator extends Component {
       // const myElement = document.getElementById('annotationDoc');
       // console.log('handle selection', Object.keys(event), Object.keys(event.target), window.anchorNode, event.target.offsetTop, window.getSelection().anchorOffset, myElement.attributes,
       // myElement, myElement.selectionStart, myElement.selectionEnd);
-      const top = this.getOffsets(event);
+      const top = this.getOffsets(event);      
       // const rect = event.target.getBoundingClientRect();
       // console.log('scroll top', window.scrollY, window.pageYOffset, rect.top, document.body.scrollTop, event.pageY, event.screenY, event.clientY);
       // const start = window.getSelection().anchorOffset;
@@ -481,11 +485,13 @@ export default class DocumentAnnotator extends Component {
     }
   }
 
+
   showButtons() {
     let nextButton = 'Next';
     let prevButton = 'Previous';
     let skipButton = 'Skip';
     let saveButton = 'Move to Done';
+    let saveDraft = 'Save Draft';
     if ('shortcuts' in this.props) {
       const shortcuts = this.props.shortcuts;
       if ('next' in shortcuts) {
@@ -516,6 +522,19 @@ export default class DocumentAnnotator extends Component {
           Mousetrap.unbind(combo);
         }
       }
+
+      if ('saveDraft' in shortcuts) {
+        const combo = convertKeyToString(shortcuts.skip);
+        skipButton = 'saveDraft (' + combo + ')';
+        // console.log('setting saveDraft shortcut', combo);
+        if (this.props.currentIndex >= 0 && !this.state.showModal) {
+          Mousetrap.bind(combo, this.props.saveDraft);
+        } else {
+          Mousetrap.unbind(combo);
+        }
+      }
+
+      
       if ('moveToDone' in shortcuts) {
         const combo = convertKeyToString(shortcuts.moveToDone);
         saveButton = 'Move To Done (' + combo + ')';
@@ -541,6 +560,12 @@ export default class DocumentAnnotator extends Component {
                       {skipButton}
                     </Button>
                   </div>
+                  <div title={saveDraft}>
+                    <Button size="mini" color="orange" icon onClick={this.props.saveDraft} disabled={this.props.currentIndex < 0 || this.state.showModal}>
+                      <Icon name="save"/>
+                      {saveDraft}
+                    </Button>
+                  </div>
                   <div title={saveButton} className="text-center">
                     <Button size="mini" color="blue" icon onClick={this.props.saveRow.bind(this, 'saveToDone')} disabled={this.props.currentIndex < 0 || this.state.showModal}>
                       {saveButton}
@@ -555,6 +580,47 @@ export default class DocumentAnnotator extends Component {
           </div>
         );
   }
+
+  componentDidUpdate(props,state) {
+      console.log("in Update : "+this.state.dragging + " ->"+ state.dragging);
+      if (this.state.dragging && !state.dragging) {
+          document.addEventListener('mousemove', this.onMouseMove);
+          document.addEventListener('mouseup', this.onMouseUp);
+      } else if (!this.state.dragging && state.dragging) {
+          document.removeEventListener('mousemove', this.onMouseMove);
+          document.removeEventListener('mouseup', this.onMouseUp);
+      }
+  };
+
+  startDrag(ev) {
+    console.error(ev);
+    this.setState({
+        dragging : true
+      });
+
+      //document.getElementById("annotation-modal-id").style.top = (ev.pageY + 20) + "px";
+      //document.getElementById("annotation-modal-id").style.left = ( ev.pageX) + "px";   
+
+      ev.stopPropagation();
+      ev.preventDefault();
+  };
+
+  onMouseUp(e){
+    this.setState({ dragging: false });
+    console.log("Mouse Up > "+ this.state.dragging);
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
+  onMouseMove(e){
+      if (!this.state.dragging) return;
+      var scrolledPosition = Math.round(document.getElementById("annotation-modal-id").parentElement.parentElement.scrollTop);
+      scrolledPosition =  scrolledPosition == undefined  ? 0 : scrolledPosition;
+      document.getElementById("annotation-modal-id").style.top = (e.pageY - 250 + scrolledPosition) + "px";
+      document.getElementById("annotation-modal-id").style.left = ( e.pageX) + "px";
+      e.stopPropagation();
+      e.preventDefault();
+  };
 
   render() {
     // function* entries(obj) {
@@ -697,7 +763,8 @@ export default class DocumentAnnotator extends Component {
       return highlighted;
     };
 
-    const selectCategory = (event1, index) => {
+    const selectCategory = (event1, index) => {      
+      // alert("selectCategory");
       console.log('select category ', event1.target.id, index, this.state);
       // const id = event1.target.id;
       const values = index.value;
@@ -761,6 +828,8 @@ export default class DocumentAnnotator extends Component {
         }
       }
 
+      // document.querySelector(".annotation input.search").value = "";
+
       this.setState({showAnnotation, annotations, undoAnnotations, postitionAnnotationMap, selecting: false});
       if (this.props.autoClose) {
         this.saveCategory();
@@ -808,16 +877,24 @@ export default class DocumentAnnotator extends Component {
       // return ( <FormGroup>
       //               {arrs}
       //           </FormGroup>);
-      return (<Dropdown tabIndex="1" ref={node => this.dropDown = node} closeOnChange="closeOnChange" closeOnBlur={false} open={this.state.menuOpen} selectOnNavigation="selectOnNavigation" scrolling="scrolling" allowAdditions="allowAdditions" additionPosition="bottom" fluid="fluid" multiple="multiple" selection="selection" className="tiny" onAddItem={handleAddition} onChange={selectCategory} options={arrs} value={values} search={this.state.menuOpen} searchInput={{
+      return (<Dropdown tabIndex="1" fluid ref={node => this.dropDown = node} closeOnChange="closeOnChange" closeOnBlur={false} open={this.state.menuOpen} selectOnNavigation="selectOnNavigation" scrolling="scrolling" allowAdditions="allowAdditions" additionPosition="bottom" fluid="fluid" multiple="multiple" selection="selection" className="tiny" onAddItem={handleAddition} onChange={selectCategory} options={arrs} value={values} search={this.state.menuOpen} searchInput={{
           autoFocus: this.state.menuOpen
         }} placeholder="Add Labels" id={index} onClose={() => {
           console.log('onclose');
           this.setState({menuOpacity: '0.4', menuOpen: false});
         }} onFocus={() => {
+          //alert("on focus");
+          setTimeout(() => {
+            var txtSearchEle = document.querySelector(".annotation input.search");
+            if(txtSearchEle != null && txtSearchEle != undefined){
+              document.querySelector(".annotation input.search").value = ""; 
+            }
+          },100);
           console.log('onfocus');
           this.setState({menuOpacity: '1.0', menuOpen: true});
         }} button="button" additionLabel="New Item: "/>);
-    };
+    };  
+
     // const { image } = this.props;  logic to render when it's found
     console.log('DocumentAnnotator state', this.state, this.props);
     let annotated = ''
@@ -836,17 +913,26 @@ export default class DocumentAnnotator extends Component {
     for (let index = 0; index < this.state.annotations.length; index++) {
       console.log('render annotation', this.state.annotations[index]);
     }
-
+    
+    var maxHeight = "500px";
     return (<div style={{
-        minHeight: '300px'
+        minHeight: '300px',
+        maxHeight : maxHeight,
+        overflow : "auto",
+        position : "relative"
       }}>
       <div>
         {
           (this.state.showModal && this.state.showAnnotation && this.state.showAnnotation.annotation && this.state.showAnnotation.annotation.id)
-            ? <div className="annotation-modal col-xs-8 col-sm-6 col-md-4 col-lg-4" style={{
+            ? <div id="annotation-modal-id" className="annotation-modal col-xs-8 col-sm-6 col-md-4 col-lg-4" style={{
+                  cursor : "move",
                   top: this.state.showAnnotation.top,
                   left: this.state.showAnnotation.left
-                }}>
+                }}
+                onDragStart = {(e) => this.startDrag(e)}
+                draggable >
+
+                <input type="hidden" id="txtHiddenIsDrag" value="false" />
                 <Button className="annotation-modal-save" onClick={this.saveCategory} style={{
                     backgroundColor: 'white'
                   }}>
@@ -890,6 +976,7 @@ DocumentAnnotator.propTypes = {
   urlData: PropTypes.bool,
   annotationCatMap: PropTypes.object,
   skipRow: PropTypes.func,
+  saveDraft : PropTypes.func,
   saveTagAndNextRow: PropTypes.func,
   getBackTopreviousRow: PropTypes.func,
   saveRow: PropTypes.func,

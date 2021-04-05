@@ -79,6 +79,7 @@ public class DataturksEndpoint {
             String id = InternalLoginAuth.generateUserId();
             String encryptedPassword = InternalLoginAuth.encryptedPassword(password);
             req.put("password", encryptedPassword);
+            LOG.info(encryptedPassword);
             DReqObj reqObj = new DReqObj(id, req);
             createUserInternal(reqObj);
             DUsers user = AppConfig.getInstance().getdUsersDAO().findByOAuthIdInternal(id);
@@ -293,7 +294,9 @@ public class DataturksEndpoint {
                 reqObj.setReqMap(reqMap);
             }
 
+            LOG.info("Dhaval 1: " + stream);
             UploadResponse response = handleFileUpload(reqObj, projectId, stream, fileDetail);
+            LOG.info("Dhaval 11: " + stream);
 
             EventsLogger.logEventLine("New file upload:" + regStr +
             "\n\n"  + " Number of records created = " + response.getNumHitsCreated() +
@@ -379,7 +382,8 @@ public class DataturksEndpoint {
                            @QueryParam("count") Long count,
                            @QueryParam("start") Long start,
                            @QueryParam("evaluation") String evaluation,
-                           @QueryParam("order") String order) {
+                           @QueryParam("order") String order,
+                           @QueryParam("hitId") Long hitId) {
 
         //EventsLogger.logEvent("d_getHits");
 
@@ -391,7 +395,10 @@ public class DataturksEndpoint {
 
         try {
             DReqObj reqObj = new DReqObj(id, null);
-            return getHitsInternal(reqObj, projectId, status, userId, label, evaluation, order, count, start);
+            if(hitId == null) {
+            	hitId = 0l;
+            }
+            return getHitsInternal(reqObj, projectId, status, userId, label, evaluation, order, count, start,hitId);
         }
         catch (Exception e) {
             LOG.error("Error " + regStr + e.toString());
@@ -881,7 +888,7 @@ public class DataturksEndpoint {
     // for pagination use start/count (used when accessing hits serially, mostly for viewing all done)
     public static GetHits getHitsInternal(DReqObj reqObj, String projectId, String status,
                                           String userId, String label, String evaluation, String orderByStr,
-                                          Long count, Long start) {
+                                          Long count, Long start,Long hitId) {
 
         //don't let ppl crawl our APIs.
         int maxHitsToReturn  = DBBasedConfigs.getConfig("maxHitsToReturnPerCall", Integer.class, DConstants.MAX_HITS_TO_RETURN);
@@ -907,7 +914,7 @@ public class DataturksEndpoint {
             //do nothing.
         }
 
-        return Controlcenter.getHits(reqObj, projectId, status, userId, label, evaluation, count, start, orderBy);
+        return Controlcenter.getHits(reqObj, projectId, status, userId, label, evaluation, count, start, orderBy,hitId);
     }
 
 
@@ -922,10 +929,20 @@ public class DataturksEndpoint {
         try {
             // get the config for the org.
             DUtils.setConfigForOrg(reqObj);
-
+            LOG.info("Dhaval 2 : " + stream);
             uploadedFile = UploadFileUtil.uploadStreamToFile(reqObj, stream, fileDetail);
-
-            response =  Controlcenter.handleFileUpload(reqObj, projectId, uploadedFile);
+            
+            String fileName = "";
+            try {
+            	fileName = fileDetail.getFileName(); 
+            }catch(Exception ex) {
+            	ex.printStackTrace();
+            }
+            
+            LOG.info("Dhaval fileName : " + fileName);
+            
+            
+            response =  Controlcenter.handleFileUpload(reqObj, projectId, uploadedFile,fileName);
             return response;
         }
         finally {

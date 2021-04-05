@@ -8,11 +8,13 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.context.internal.ManagedSessionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class DHitsDAO extends AbstractDAO<DHits> implements IDDao<DHits>{
-
+	private static final Logger LOG = LoggerFactory.getLogger(DHitsDAO.class);
     /**
      * Constructor.
      *
@@ -46,7 +48,7 @@ public class DHitsDAO extends AbstractDAO<DHits> implements IDDao<DHits>{
         }
         finally {
             session.close();
-            ManagedSessionContext.unbind(sessionFactory);
+            ManagedSessionContext.unbind(sessionFactory);                 
         }
     }
 
@@ -57,6 +59,7 @@ public class DHitsDAO extends AbstractDAO<DHits> implements IDDao<DHits>{
     public String createInternal(DHits entry) {
         Session session = sessionFactory.openSession();
         try {
+        	LOG.info("dhaval createInternal filname : "+entry.getFileName());
             ManagedSessionContext.bind(session);
             Transaction transaction = session.beginTransaction();
             try {
@@ -325,12 +328,15 @@ public class DHitsDAO extends AbstractDAO<DHits> implements IDDao<DHits>{
                 if (orderBy == DTypes.HIT_ORDER_Type.NONE) {
                     orderByString = "";
                 }
+                if (orderBy == DTypes.HIT_ORDER_Type.ID) {
+                    orderByString += "id ASC";
+                }
 
                 HQLQuery += orderByString;
 
                 Query query = session.createQuery(HQLQuery);
                 query.setParameter("projectId", projectId);
-                if (status != null) {
+                if (status != null && !status.trim().equalsIgnoreCase("All")) {
                     query.setParameter("status", status);
                 }
                 if (evaluation != null) {
@@ -350,7 +356,7 @@ public class DHitsDAO extends AbstractDAO<DHits> implements IDDao<DHits>{
         finally {
             session.close();
             ManagedSessionContext.unbind(sessionFactory);
-        }
+        }          
     }
 
     public void deleteByProjectId(String projectId) {

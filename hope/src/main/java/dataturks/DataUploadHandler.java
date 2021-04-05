@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,6 +79,20 @@ public class DataUploadHandler {
             return handleDocumentAnnotationSingleFile(reqObj, project, filePath);
         }
     }
+    
+    public static UploadResponse handleDocumentAnnotation(DReqObj reqObj, DProjects project, String filePath,String fileName) {
+        DTypes.File_Type type = UploadFileUtil.getFileType(filePath);
+        if (type == DTypes.File_Type.IMAGE) {
+            throw new WebApplicationException("Image file not supported for text tasks. Please upload a valid text/pdf/doc/zip file.", Response.Status.BAD_REQUEST);
+        }
+
+        if (type == DTypes.File_Type.ZIP || type == DTypes.File_Type.TAR || type == DTypes.File_Type.GZIP) {
+            return handleDocumentAnnotationZip(reqObj, project, filePath,fileName);
+        }
+        else {
+            return handleDocumentAnnotationSingleFile(reqObj, project, filePath,fileName);
+        }
+    }
 
     // the passed file is a zip or tar.
     private static UploadResponse handleDocumentAnnotationZip(DReqObj reqObj, DProjects project, String filePath) {
@@ -91,6 +106,38 @@ public class DataUploadHandler {
 
             for (String file : files) {
                 if (handleDocumentAnnotationSingleFileInternal(reqObj, project, file)) {
+                    response.incrementHits();
+                }
+                else {
+                    response.incrementIgnored();
+                }
+
+            }
+            response.setTotalUploadSizeInBytes(UploadFileUtil.getFileSize(filePath));
+        }
+        finally {
+            try {
+                FileUtils.deleteDirectory(new File(unzipDir));
+            }
+            catch (Exception e) {
+                LOG.error("Unable to delete unzip directory " + unzipDir + " created for project " + project.getId() + " error = " + e.toString());
+            }
+        }
+        return response;
+    }
+    
+    private static UploadResponse handleDocumentAnnotationZip(DReqObj reqObj, DProjects project, String filePath,String fileName) {
+        UploadResponse response = new UploadResponse();
+        String unzipDir = UploadFileUtil.getRandomUploadPath(null);
+        try {
+            List<String> files = UploadFileUtil.getAllFilesFromArchive(filePath, unzipDir);
+            if (files == null || files.isEmpty()) {
+                throw new WebApplicationException("Please upload a valid zip (.zip) file.", Response.Status.BAD_REQUEST);
+            }
+
+            for (String file : files) {
+            	LOG.info("Dhavalfile : file "+file);
+                if (handleDocumentAnnotationSingleFileInternal(reqObj, project, file,"")) {
                     response.incrementHits();
                 }
                 else {
@@ -136,12 +183,63 @@ public class DataUploadHandler {
         response.incrementHits();
         return response;
     }
+    
+    private static UploadResponse handleDocumentAnnotationSingleFile(DReqObj reqObj, DProjects project, String filePath,String fileName) {
+        UploadResponse response =null;
+        //when json is uploaded.
+        if (reqObj.getUploadFileType() == DTypes.File_Upload_Format.PRE_TAGGED_JSON) {
+            response = handleTasksWithPreTaggedJSONFile(reqObj, project, filePath);
+            return response;
+        }
+        if (reqObj.getUploadFileType() == DTypes.File_Upload_Format.URL_FILE) {
+            response = handleTasksWithTextFileWithURLs(reqObj, project, filePath);
+            return response;
+        }
+
+        boolean status = handleDocumentAnnotationSingleFileInternal(reqObj, project, filePath,fileName);
+        if (!status) {
+            if (!Validations.isValidDataItemFromFileForTextTask(filePath, reqObj)) {
+                throw new WebApplicationException("The file is too big, max characters allowed = " + reqObj.getConfigs().maxHitDataLength + " .(for document annotation, entire file is displayed as one data-item, if you want each line to become one data-item, please create a 'NER tagging' project)", Response.Status.BAD_REQUEST);
+
+            }
+            throw new WebApplicationException("Unable to create data item, uploaded file not a valid text/pdf/doc file.", Response.Status.BAD_REQUEST);
+
+        }
+        response = new UploadResponse();
+        response.incrementHits();
+        return response;
+    }
 
     private static boolean handleDocumentAnnotationSingleFileInternal(DReqObj reqObj, DProjects project, String filePath) {
         boolean status = false;
         try {
             String content = UploadFileUtil.readText(filePath);
             if(createHitWithContent(reqObj, project, content, false, false) != null) {
+                status = true;
+            }
+        }
+        catch (Exception e) {
+            LOG.error("handleDocumentAnnotationSingleFile for project " + project.getId() + " file= " + filePath + " Error: " + e.toString());
+        }
+        return status;
+    }
+    
+    private static boolean handleDocumentAnnotationSingleFileInternal(DReqObj reqObj, DProjects project, String filePath,String fileName) {
+        boolean status = false;
+        try {
+        	LOG.info("Dhaval123123 : filePath : "+filePath);
+            String content = UploadFileUtil.readText(filePath);
+            
+            
+            try {
+            	if(fileName == null || fileName.trim().equalsIgnoreCase("")) {
+                	fileName =filePath.substring(filePath.lastIndexOf(File.separator) + 1,filePath.length());
+            	}
+            }catch(Exception ex) {
+            	LOG.error("handleDocumentAnnotationSingleFile for project Filename not found " + project.getId() + " file= " + filePath + " Error: " + ex.toString());
+            }
+            
+            if(createHitWithContent(reqObj, project, content, false, false,fileName) != null) {
                 status = true;
             }
         }
@@ -158,6 +256,23 @@ public class DataUploadHandler {
             DHits hits = new DHits(project.getId(), content);
             if (hitStatus) hits.setStatus(DConstants.HIT_STATUS_DONE);
             if (isURL) hits.setURL(true);
+            String hitIdStr = AppConfig.getInstance().getdHitsDAO().createInternal(hits);
+            return hitIdStr;
+        }
+        return null;
+    }
+    
+ // given the contents and status of a hit, create it.
+    private static String createHitWithContent(DReqObj reqObj, DProjects project, String content, boolean hitStatus, boolean isURL,String fileName) {
+
+        if (Validations.isValidDataItemForTextTask(content, reqObj)) {
+            DHits hits = new DHits(project.getId(), content);
+            hits.setFileName(fileName);
+            if (hitStatus) hits.setStatus(DConstants.HIT_STATUS_DONE);
+            if (isURL) hits.setURL(true);
+            
+            LOG.info("dhaval createHitWithContent filname : "+fileName);
+            
             String hitIdStr = AppConfig.getInstance().getdHitsDAO().createInternal(hits);
             return hitIdStr;
         }

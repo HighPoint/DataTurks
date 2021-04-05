@@ -9,6 +9,9 @@ import java.util.Date;
 
 @Entity
 @Table(name = "d_projects")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DProjects.findAll",
                 query = "select e from DProjects e where status != 'DELETED'"),
