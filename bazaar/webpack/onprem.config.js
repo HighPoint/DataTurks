@@ -60,7 +60,7 @@ module.exports = {
     new ExtractTextPlugin('[name]-[contenthash].css', {allChunks: true}),
     new webpack.DefinePlugin({
       'process.env': {
-        NODE_ENV: '"production"',
+        NODE_ENV: '"development"',
         NODE_DEST: '"onpremise"',
       },
 

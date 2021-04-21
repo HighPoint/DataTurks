@@ -32,7 +32,7 @@ public class ProjectDetails {
 
     private String shortDescription;
 
-    private java.util.Date created_timestamp;
+    private java.util.Date created_timestamp = new Date();
 
     private List<ContributorDetails> contributorDetails;
 

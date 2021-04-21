@@ -7,9 +7,9 @@ import config from '../config'
 
 const superagent = require("superagent");
 
-export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : 'http://' + window.location.hostname + '/dataturks/');
+//export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : 'http://' + window.location.hostname + '/dataturks/');
 
-// export const BASE_URL = 'http://localhost:8080/dataturks/';
+export const BASE_URL = 'http://localhost:9090/dataturks/';
 
 // const uid = '2c9fafb06185d9b3016185dbb66a0000';
 // const token = '1234';
