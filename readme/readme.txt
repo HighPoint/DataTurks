@@ -16,7 +16,7 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
 	npm install -g gulp-cli
 	npm install -g node-pre-gyp
 	
-	
+	rm package-lock.json
 	npm install --loglevel=info
 	
 	
