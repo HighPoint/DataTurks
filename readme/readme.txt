@@ -25,7 +25,7 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
 	npm install node-sass -g
 	npm install --global windows-build-tools
 	
-	cd /home/bazaar/semantic
+	cd ./semantic
 	gulp build
 	
 	npm run build-onprem
