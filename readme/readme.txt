@@ -18,6 +18,7 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
 	
 	rm package-lock.json
 	npm install --loglevel=info
+	npm audit fix
 	
 	
 	
@@ -26,6 +27,7 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
 	npm install --global windows-build-tools
 	
 	cd ./semantic
+	
 	gulp build
 	
 	npm run build-onprem
