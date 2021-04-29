@@ -14,6 +14,9 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
         npm i -g firebase@latest
 	npm install -g node-gyp@latest
 	npm install -g gulp-cli
+	
+	apt-get install g++
+	
 	npm install -g node-pre-gyp
 	
 	rm package-lock.json
