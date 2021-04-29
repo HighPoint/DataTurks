@@ -5,6 +5,11 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
 	VCTargetsPath=C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\IDE\VC\VCTargets
 	VS110COMNTOOLS=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools
 
+3) cd work/dataturks/DataTurks/hope/docker
+
+	chmod +x init.sh
+	./init.sh
+	
 3) Goto Bazaar folder
         npm i -g firebase@latest
 	npm install --loglevel=info
