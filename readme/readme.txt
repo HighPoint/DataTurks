@@ -13,8 +13,9 @@ https://medium.com/@chaitanya__v/installing-dataturks-machine-learning-data-anno
 3) Goto Bazaar folder
         npm i -g firebase@latest
 	npm install -g node-gyp@latest
-	npm install -g node-pre-gyp
 	npm install -g gulp-cli
+	npm install -g node-pre-gyp
+	
 	
 	npm install --loglevel=info
 	
