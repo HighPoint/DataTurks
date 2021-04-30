@@ -89,17 +89,17 @@
     </dependency>
   </dependencies>
   <properties>
-    <jetty.version>6.1.26</jetty.version>
-    <metrics.version>3.1.0</metrics.version>
-    <httpcomponents.version>4.3</httpcomponents.version>
-    <guava.version>23.0</guava.version>
-    <aws.version>1.11.300</aws.version>
     <tika.version>1.17</tika.version>
+    <aws.version>1.11.300</aws.version>
     <dropwizard.version>1.0.2</dropwizard.version>
-    <commons-dbutils.version>1.6</commons-dbutils.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <metrics.version>3.1.0</metrics.version>
+    <mysql-connector.version>5.1.49</mysql-connector.version>
+    <httpcomponents.version>4.3</httpcomponents.version>
+    <jetty.version>6.1.26</jetty.version>
+    <guava.version>23.0</guava.version>
     <jersey-media.version>2.25</jersey-media.version>
-    <mysql-connector.version>8.0.16</mysql-connector.version>
+    <commons-dbutils.version>1.6</commons-dbutils.version>
   </properties>
 </project>
 
