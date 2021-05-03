@@ -47,7 +47,7 @@
         "NODE_PATH": "./src",
         "NODE_ENV": "production",
         "NODE_DEST": "online",
-        "BASE_URL": "https://3.14.250.204/dataturks1/",
+        "BASE_URL": "https://localhost:3000/dataturks1/",
         "PORT": 3000,
         "APIPORT": 3030
       }
@@ -58,7 +58,7 @@
         "NODE_PATH": "./src",
         "NODE_ENV": "production",
         "NODE_DEST": "onpremise",
-        "BASE_URL": "http://3.14.250.204/dataturks/",
+        "BASE_URL": "http://localhost:3000/dataturks/",
         "PORT": 3000,
         "APIPORT": 3030
       }
