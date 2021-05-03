@@ -11,6 +11,9 @@ import java.util.Objects;
 // as the userId, we only use oAuthId as the userID, the db generated UUID is never used. Why does it even exit? God knows.
 @Entity
 @Table(name = "d_users")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DUsers.findAll",
                 query = "select e from DUsers e"),

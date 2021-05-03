@@ -21,7 +21,7 @@ public class DOrgConfigs {
     public static DOrgConfigs getDefault() {
         DOrgConfigs configs = new DOrgConfigs();
         configs.setMaxHitDataLength(DBBasedConfigs.getConfig("maxStringLengthForTextTasks", Integer.class, Constants.MAX_STRING_LENGTH_FOR_TEXT_TASK));
-        configs.setMaxUploadSizeInBytes((long)DBBasedConfigs.getConfig("fileUploadMaxSizeBytes", Integer.class, Constants.MAX_FILE_UPLOAD_SIZE));
+        configs.setMaxUploadSizeInBytes(Constants.MAX_FILE_UPLOAD_SIZE); 
         configs.setNumHitsPerProject((long)DBBasedConfigs.getConfig("dtMaxHitsPerProject", Integer.class, Constants.MAX_NUM_HITS_PER_PROJECT));
         configs.setNumLabelsAllowed((long)DBBasedConfigs.getConfig("dtNumLabelsAllowed", Integer.class, Constants.NUM_LABELS_ALLOWED));
         return configs;
@@ -35,7 +35,7 @@ public class DOrgConfigs {
                     configs.setMaxHitDataLength(Long.parseLong(valueObj.get("maxStringLengthForTextTasks")));
                 }
                 if (valueObj.containsKey("fileUploadMaxSizeBytes")) {
-                    configs.setMaxUploadSizeInBytes(Long.parseLong(valueObj.get("fileUploadMaxSizeBytes")));
+                    configs.setMaxUploadSizeInBytes(Constants.MAX_FILE_UPLOAD_SIZE);
                 }
                 if (valueObj.containsKey("maxHitsPerProject")) {
                     configs.setNumHitsPerProject(Long.parseLong(valueObj.get("maxHitsPerProject")));

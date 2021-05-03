@@ -70,6 +70,9 @@ public class UploadFileUtil {
         long maxFileSize = reqObj.getConfigs().maxUploadSizeInBytes;
 
         String path = getRandomUploadPath(fileDetail.getFileName());
+        
+        LOG.info("Dhaval 3 : " + stream + " path : "+path);
+        
         boolean success = copy(stream, Paths.get(path), maxFileSize);
         if (success) {
             return path;
@@ -82,12 +85,16 @@ public class UploadFileUtil {
         OutputStream out = null;
         boolean isExceed = false;
         try {
+        	LOG.info("Dhaval 4: " + input + " and target : "+target);
+        	
             out = Files.newOutputStream(target,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-
+            LOG.info("Dhaval 5: " + input);
+            
             long nread = 0L;
             byte[] buf = new byte[BUFFER_SIZE];
             int n;
+            LOG.info("Dhaval 6: " + input);
             while ((n = input.read(buf)) > 0) {
                 out.write(buf, 0, n);
                 nread += n;
@@ -96,6 +103,7 @@ public class UploadFileUtil {
                     break;
                 }
             }
+            LOG.info("Dhaval 7: " + input);
         } catch (IOException ex) {
             LOG.error("Exception while copying file " + target + " Error = " + ex.toString());
             throw new WebApplicationException("Some internal error occurred, please contact support." , Response.Status.BAD_GATEWAY);

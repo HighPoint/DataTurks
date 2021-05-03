@@ -7,6 +7,9 @@ import java.util.Date;
 
 @Entity
 @Table(name = "d_onprem_license")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DLicense.findAll",
                 query = "select e from DLicense e"),

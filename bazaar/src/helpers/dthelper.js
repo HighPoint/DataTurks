@@ -7,9 +7,14 @@ import config from '../config'
 
 const superagent = require("superagent");
 
-export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : window.location.protocol + "//" + window.location.hostname + '/dataturks/');
+// Original Master
+// export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : window.location.protocol + "//" + window.location.hostname + '/dataturks/');
 
-// export const BASE_URL = 'http://localhost:8080/dataturks/';
+// Master with Distribution
+// export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : 'http://' + window.location.hostname + '/dataturks/');
+
+
+export const BASE_URL = 'http://localhost:9090/dataturks/';
 
 // const uid = '2c9fafb06185d9b3016185dbb66a0000';
 // const token = '1234';
@@ -119,7 +124,8 @@ export const fetchHits = (
   type,
   label,
   userId,
-  evaluationType
+  evaluationType,
+  hitId
 ) => {
   console.log(
     "fetching project details ",
@@ -128,7 +134,8 @@ export const fetchHits = (
     count,
     type,
     label,
-    userId
+    userId,
+    hitId
   );
   const { uid, token } = getUidToken();
   let status = "notDone";
@@ -152,6 +159,9 @@ export const fetchHits = (
   }
   if (evaluationType) {
     url = url + "&evaluation=" + evaluationType;
+  }
+  if(hitId && hitId > 0){
+    url = url + "&hitId=" + hitId;
   }
   superagent
     .post(url)
@@ -361,6 +371,8 @@ export const fetchHitsDetails = (
   let status = "done";
   if (type && type === "skipped") {
     status = "skipped";
+  }else  if (type && type === "notDone") {
+    status = "notDone";
   }
   let url =
     BASE_URL +
@@ -371,6 +383,41 @@ export const fetchHitsDetails = (
     count +
     "&status=" +
     status;
+  if (label) {
+    url = url + "&label=" + label.replace(" ", "+");
+  }
+  if (userId) {
+    url = url + "&userId=" + userId;
+  }
+  superagent
+    .post(url)
+    .set("uid", uid)
+    .set("token", token)
+    .end((err, res) => {
+      callback(err, res);
+    });
+};
+
+export const fetHitDetailWithOrder = (
+  pid,
+  start,
+  count,
+  callback,  
+  label,
+  userId
+) => {
+  console.log("fetching project stats ", pid, label, userId);
+  const { uid, token } = getUidToken();
+  let status = "noStatus";
+
+  let url =
+    BASE_URL +
+    pid +
+    "/getHits?start=" +
+    start +
+    "&count=" +
+    count +
+    "&order=ID";
   if (label) {
     url = url + "&label=" + label.replace(" ", "+");
   }

@@ -7,6 +7,9 @@ import java.util.Date;
 
 @Entity
 @Table(name = "d_api_keys")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DAPIKeys.findAll",
                 query = "select e from DAPIKeys e where status != 'DELETED'"),
@@ -90,7 +93,7 @@ public class DAPIKeys implements IDdbPojo{
         this.notes = notes;
     }
 
-    public Date getCreated_timestamp() {
+    public Date getCreated_timestamp() {    	
         return created_timestamp;
     }
 

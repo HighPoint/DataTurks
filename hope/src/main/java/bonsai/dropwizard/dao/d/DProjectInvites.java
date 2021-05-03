@@ -8,6 +8,9 @@ import java.util.Date;
 
 @Entity
 @Table(name = "d_project_invites")
+@org.hibernate.annotations.Entity(
+        dynamicInsert = true
+)
 @NamedQueries({
         @NamedQuery(name = "bonsai.dropwizard.dao.d.DProjectInvites.findAll",
                 query = "select e from DProjectInvites e"),

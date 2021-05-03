@@ -82,8 +82,7 @@ export const DOC_ENTITY_COLORS = [
   "#008080",
   "#40E0D0",
   "#EE82EE",
-  "#40826D",
-  "#FFFFFF"
+  "#40826D"
 ];
 
 export const DUMMY_UID = "123";

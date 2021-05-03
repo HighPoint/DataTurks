@@ -24,6 +24,10 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
@@ -121,6 +125,21 @@ public class DataturksAPIEndPoint {
 
             //invalidate the cache for the user.
             CacheWrapper.updateProjectCreateDelete(reqObj, reqObj.getOrgId());
+            
+            
+            if(req != null && req.containsKey("contributors")) {
+            	JsonArray contributors  = new JsonParser().parse(req.get("contributors")).getAsJsonArray();
+            	// JsonArray contributors = new JsonArray(req.get("contributors"));
+            	
+            	for (JsonElement jsonEle : contributors) {
+                    JsonObject contributor = jsonEle.getAsJsonObject();
+                    String userEmail = contributor.get("email").getAsString();
+                    String userRole = contributor.get("role").getAsString();
+                    
+                    DReqObj reqObj1 = new DReqObj(id, null);
+                    DataturksEndpoint.addContributorInternal(reqObj1, projectId, userEmail, userRole);
+                }
+            }
             return response;
         }
         catch (Exception e) {
@@ -231,7 +250,13 @@ public class DataturksAPIEndPoint {
                 reqObj.setReqMap(reqMap);
             }
 
-
+            String fileName = "";
+            try {
+            	fileName = fileDetail.getFileName(); 
+            }catch(Exception ex) {
+            	ex.printStackTrace();
+            }
+            
             UploadResponse response = DataturksEndpoint.handleFileUpload(reqObj, projectId, stream, fileDetail);
 
             EventsLogger.logEventLine("New file upload:" + regStr +

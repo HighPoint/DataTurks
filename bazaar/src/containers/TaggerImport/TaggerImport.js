@@ -215,7 +215,7 @@ export default class TaggerImport extends Component {
       const rules = { tags: this.state.fields.tags, instructions: this.state.fields.instructions };
       if (this.props.location.query.type === DOCUMENT_ANNOTATION ||
         this.props.location.query.type === POS_TAGGING_GENERIC || this.props.location.query.type === IMAGE_BOUNDING_BOX) {
-        rules.autoClose = this.state.autoClose;
+        rules.autoClose = false;
       }
       if (this.props.location.query.type === IMAGE_BOUNDING_BOX) {
         rules.hideLabels = this.state.hideLabels;

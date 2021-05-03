@@ -91,6 +91,7 @@ public class DTypes {
         NONE,
         RANDOM,
         NEW_FIRST,
-        OLD_FIRST
+        OLD_FIRST,
+        ID
     }
 }

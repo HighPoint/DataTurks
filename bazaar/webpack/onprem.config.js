@@ -60,7 +60,7 @@ module.exports = {
     new ExtractTextPlugin('[name]-[contenthash].css', {allChunks: true}),
     new webpack.DefinePlugin({
       'process.env': {
-        NODE_ENV: '"production"',
+        NODE_ENV: '"development"',
         NODE_DEST: '"onpremise"',
       },
 
@@ -84,7 +84,7 @@ module.exports = {
         drop_debugger: true,
         conditionals: true,
         evaluate: true,
-        drop_console: false, // strips console statements
+        drop_console: true, // strips console statements
         sequences: true,
         booleans: true
       }
