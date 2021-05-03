@@ -108,7 +108,7 @@
       "env": {
         "NODE_ENV": "production",
         "NODE_DEST": "onpremise",
-        "BASE_URL": "http://3.14.250.204/dataturks/"
+        "BASE_URL": "http://localhost:3000/dataturks/"
       }
     }
   },
