@@ -50,4 +50,3 @@ server:
         archive: true
         archivedLogFilenamePattern: ./logs/access.%d.log.gz
         archivedFileCount: 2
-
