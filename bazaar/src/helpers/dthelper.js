@@ -7,7 +7,12 @@ import config from '../config'
 
 const superagent = require("superagent");
 
-//export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : 'http://' + window.location.hostname + '/dataturks/');
+// Original Master
+// export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : window.location.protocol + "//" + window.location.hostname + '/dataturks/');
+
+// Master with Distribution
+// export const BASE_URL = (config.servingEnv === 'online' ? config.apiURL : 'http://' + window.location.hostname + '/dataturks/');
+
 
 export const BASE_URL = 'http://localhost:9090/dataturks/';
 
